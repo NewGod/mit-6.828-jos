@@ -362,6 +362,7 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
+	// Fill this function in
     pde_t *pt = pgdir + PDX(va);
     if (*pt & PTE_P) return (pte_t *)KADDR(PTE_ADDR(*pt)) + PTX(va);
     else {
@@ -375,7 +376,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
             }
         }
     }
-	// Fill this function in
 	return NULL;
 }
 

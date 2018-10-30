@@ -24,7 +24,8 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-    { "backtrace", "Display a listing of function call frames", mon_backtrace}
+    { "backtrace", "Display a listing of function call frames", mon_backtrace},
+    { "showmappings", "Display the memory mapping", mon_showmappings }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -73,7 +74,42 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int 
+mon_showmappings(int argc, char **argv, struct Trapframe *tf)
+{
+    extern pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
+    extern pde_t *kern_pgdir;
 
+    if (argc != 3) {
+        cprintf("Usage: showmappings begin_addr end_addr\n");
+        return 0;
+    }
+    
+    long begin = strtol(argv[1], NULL, 0);
+    long end = strtol(argv[2], NULL, 0);
+    if (begin != ROUNDUP(begin, PGSIZE) || end != ROUNDUP(end, PGSIZE))
+    {
+        cprintf("Warning: not aligned\n the address will aligned automaticly\n");
+        begin = ROUNDUP(begin, PGSIZE);
+        end = ROUNDUP(end, PGSIZE);
+    }
+    if (end <= begin) {
+        cprintf("Error: end_addr must larger than begin_addr\n");
+        return 0;
+    }
+    for (; begin < end; begin += PGSIZE){
+        cprintf("%08x--%08x: ", begin, begin+PGSIZE);
+        pte_t *pte = pgdir_walk(kern_pgdir, (void*)begin, 0);
+        if (!pte)
+        {
+            cprintf("not mapped\n");
+            continue;
+        }
+        cprintf("page %08x ", PTE_ADDR(*pte));
+        cprintf("PTE_P: %x, PTE_W: %x, PTE_U: %x\n", *pte&PTE_P, *pte&PTE_W, *pte&PTE_U);
+    }
+    return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
