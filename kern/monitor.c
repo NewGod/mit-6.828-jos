@@ -161,7 +161,8 @@ monitor(struct Trapframe *tf)
 {
 	char *buf;
 
-	cprintf("\033[0;31;40mWelcome \033[0;32;40mto \033[0;33;40mthe \033[0;34;40mJOS \033[0;35;40mkernel \033[0;36;40mmonitor!\033[0m\n");
+	//cprintf("\033[0;31;40mWelcome \033[0;32;40mto \033[0;33;40mthe \033[0;34;40mJOS \033[0;35;40mkernel \033[0;36;40mmonitor!\033[0m\n");
+    cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
 	if (tf != NULL)
