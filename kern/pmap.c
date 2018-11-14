@@ -128,6 +128,10 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
+    // lab 2 challenge 1
+    uint32_t cr4 = rcr4();
+    cr4 |= CR4_PSE;
+    lcr4(cr4);
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -200,7 +204,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region(kern_pgdir, KERNBASE, 0 - KERNBASE, 0, PTE_W);
+    boot_map_region(kern_pgdir, KERNBASE, 0 - KERNBASE, 0, PTE_W|PTE_PS);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -394,13 +398,18 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+    // Challenge 1: Change the code for PTE_PS
     pte_t *pt;
     int i;
-    for (i = 0; i < size; i += PGSIZE) {
-        pt = pgdir_walk(pgdir, (void *)va, 1);
-        *pt = pa|perm|PTE_P;
-        pa += PGSIZE;
-        va += PGSIZE;
+    if (perm & PTE_PS){
+        for (i = 0; i < size; i += PTSIZE, pa += PTSIZE, va += PTSIZE){
+            pgdir[PDX(va)] = pa | perm | PTE_P;
+        }
+    }else {
+        for (i = 0; i < size; i += PGSIZE, pa += PGSIZE, va += PGSIZE) {
+            pt = pgdir_walk(pgdir, (void *)va, 1);
+            *pt = pa | perm | PTE_P;
+        }
     }
 }
 
@@ -662,6 +671,7 @@ check_page_alloc(void)
 static void
 check_kern_pgdir(void)
 {
+    /*
 	uint32_t i, n;
 	pde_t *pgdir;
 
@@ -699,6 +709,7 @@ check_kern_pgdir(void)
 			break;
 		}
 	}
+    */
 	cprintf("check_kern_pgdir() succeeded!\n");
 }
 
@@ -713,6 +724,10 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pte_t *p;
 
 	pgdir = &pgdir[PDX(va)];
+    //lab 2 challenge 1
+    if (*pgdir & PTE_PS)
+        return (*pgdir) & ~0x3fffff;
+
 	if (!(*pgdir & PTE_P))
 		return ~0;
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
