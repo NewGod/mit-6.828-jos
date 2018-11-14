@@ -18,5 +18,8 @@ enum {
 	SYS_ipc_recv,
 	NSYSCALLS
 };
+#define MSR_IA32_SYSTEM_CS (0x174)
+#define MSR_IA32_SYSTEM_ESP (0x175)
+#define MSR_IA32_SYSTEM_EIP (0x176)
 
 #endif /* !JOS_INC_SYSCALL_H */

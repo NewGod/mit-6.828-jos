@@ -70,11 +70,30 @@ void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
+    extern uint32_t vectors[];
+    extern void *syscall_handler(void);
 
 	// LAB 3: Your code here.
+    for (int i = 0; i<=T_SYSCALL; i++) 
+        switch (i) {
+            case T_BRKPT:
+                SETGATE(idt[T_BRKPT], 1, GD_KT, vectors[i], 3);
+                break;
+            case T_SYSCALL:
+                SETGATE(idt[T_SYSCALL], 1, GD_KT, vectors[i], 3);
+                break;
+            default: 
+                SETGATE(idt[i], 0, GD_KT, vectors[i], 0);
+                break;
+        }
 
 	// Per-CPU setup 
 	trap_init_percpu();
+
+    //challenge 3 
+    wrmsr(MSR_IA32_SYSTEM_CS, GD_KT, 0);
+    wrmsr(MSR_IA32_SYSTEM_ESP, ts.ts_esp0, 0);
+    wrmsr(MSR_IA32_SYSTEM_EIP, syscall_handler, 0);
 }
 
 // Initialize and load the per-CPU TSS and IDT
@@ -176,6 +195,30 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+    int r;
+    switch (tf->tf_trapno) {
+        case T_PGFLT:
+            page_fault_handler(tf);
+            return ;
+        case T_BRKPT:
+            monitor(tf);
+            return;
+        case T_SYSCALL:
+            r = syscall(
+                    tf->tf_regs.reg_eax,
+                    tf->tf_regs.reg_edx,
+                    tf->tf_regs.reg_ecx,
+                    tf->tf_regs.reg_ebx,
+                    tf->tf_regs.reg_edi,
+                    tf->tf_regs.reg_esi
+                    );
+
+           if (r < 0) {
+               panic("trap_dispatch: %e", r);
+           }
+           tf->tf_regs.reg_eax = r;
+           return;
+    }
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -200,6 +243,17 @@ trap_dispatch(struct Trapframe *tf)
 	}
 }
 
+void syscall_trap (struct Trapframe *tf) {
+    curenv->env_tf = *tf; 
+    tf->tf_regs.reg_eax = syscall( 
+            tf->tf_regs.reg_eax, 
+            tf->tf_regs.reg_edx,
+            tf->tf_regs.reg_ecx,
+            tf->tf_regs.reg_ebx,
+            tf->tf_regs.reg_edi,
+            0
+            );
+}
 void
 trap(struct Trapframe *tf)
 {
@@ -271,6 +325,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+    if (tf->tf_cs == GD_KT) {
+       panic("page_fault_handler: page fault in kernel mode");
+    }
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

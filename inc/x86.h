@@ -117,6 +117,16 @@ lidt(void *p)
 	asm volatile("lidt (%0)" : : "r" (p));
 }
 
+#define rdmsr(msr,val1,val2) \
+	__asm__ __volatile__("rdmsr" \
+	: "=a" (val1), "=d" (val2) \
+	: "c" (msr))
+
+ #define wrmsr(msr,val1,val2) \
+	__asm__ __volatile__("wrmsr" \
+	: /* no outputs */ \
+	: "c" (msr), "a" (val1), "d" (val2))
+
 static inline void
 lgdt(void *p)
 {
