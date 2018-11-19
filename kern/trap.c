@@ -251,7 +251,7 @@ void syscall_trap (struct Trapframe *tf) {
             tf->tf_regs.reg_ecx,
             tf->tf_regs.reg_ebx,
             tf->tf_regs.reg_edi,
-            0
+            tf->tf_regs.reg_esi
             );
 }
 void
