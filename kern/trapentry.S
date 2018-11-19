@@ -126,14 +126,6 @@ _alltraps:
 .globl syscall_handler
 .type syscall_handler, @function
 syscall_handler: 
-    pushl $(GD_UD)|3
-    pushl %ebp
-    pushfl
-    pushl $(GD_UT)|3
-    pushl %esi 
-    pushl $0 
-    pushl $0 
-
     pushl %ds
     pushl %es 
     pushal 

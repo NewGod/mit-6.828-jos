@@ -35,20 +35,10 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 //lab 3 challenge 2
 
     asm volatile (
-              "pushl %%edx\n\t"
-              "pushl %%ecx\n\t"
-              "pushl %%ebx\n\t"
-              "pushl %%edi\n\t"
-              "pushl %%ebp\n\t"
               "movl  %%esp,%%ebp\n\t"
               "leal 0f, %%esi\n\t"
               "sysenter\n\t"
               "0:\n\t"
-              "popl %%ebp\n\t"
-              "popl %%edi\n\t"
-              "popl %%ebx\n\t"
-              "popl %%ecx\n\t"
-              "popl %%edx\n\t"
               :"=a" (ret):"a" (num), "d" (a1), "c" (a2),
               "b" (a3), "D" (a4):"%esp", "%esi");
 
