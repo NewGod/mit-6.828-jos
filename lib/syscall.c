@@ -20,7 +20,6 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// potentially change the condition codes and arbitrary
 	// memory locations.
 
-/*
 	asm volatile("int %1\n"
 		     : "=a" (ret)
 		     : "i" (T_SYSCALL),
@@ -31,9 +30,9 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		       "D" (a4),
 		       "S" (a5)
 		     : "cc", "memory");
-             */
 //lab 3 challenge 2
 
+    /*
     asm volatile (
               "movl  %%esp,%%ebp\n\t"
               "leal 0f, %%esi\n\t"
@@ -41,6 +40,7 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
               "0:\n\t"
               :"=a" (ret):"a" (num), "d" (a1), "c" (a2),
               "b" (a3), "D" (a4):"%esp", "%esi");
+    */
 
 	if(check && ret > 0)
 		panic("syscall %d returned %d (> 0)", num, ret);
