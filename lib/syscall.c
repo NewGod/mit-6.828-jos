@@ -122,3 +122,13 @@ sys_ipc_recv(void *dstva)
 	return syscall(SYS_ipc_recv, 1, (uint32_t)dstva, 0, 0, 0, 0);
 }
 
+int 
+sys_checkpoint(envid_t envid, void* va) { 
+    return syscall(SYS_checkpoint, 1, envid, (uint32_t)va, 0, 0, 0);
+}
+
+int 
+sys_restart(envid_t envid, void* va) { 
+    return syscall(SYS_restart, 1, envid, (uint32_t)va, 0, 0, 0);
+}
+

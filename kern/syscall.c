@@ -337,7 +337,36 @@ sys_ipc_recv(void *dstva)
     curenv->env_status = ENV_NOT_RUNNABLE;
     sched_yield();
 }
-
+// Lab 4 challenge
+static int 
+sys_checkpoint(envid_t envid, void *va){ 
+    struct PageInfo *pp1, *pp2; 
+    struct Env *env;
+    if (envid2env(envid, &env, 1) < 0) return -E_BAD_ENV;
+    if ((uintptr_t) va >= UTOP || PGOFF(va)) return -E_INVAL;
+    if (!(pp1 = page_lookup(curenv->env_pgdir, va, 0))) return -E_INVAL;
+    if (!(pp2 = page_lookup(env->env_pgdir, (void*) USTACKTOP - PGSIZE, 0))) 
+        return -E_INVAL;
+    memmove(page2kva(pp1), page2kva(pp2), PGSIZE);
+    env->env_checkpoint = env->env_tf;
+    return 0;
+}
+static int 
+sys_restart(envid_t envid, void *va){
+    struct PageInfo *pp1, *pp2;
+    struct Env *env;
+    if(envid2env(envid, &env, 1) < 0)
+        return -E_BAD_ENV;
+    if((uintptr_t)va >= UTOP || PGOFF(va))
+        return -E_INVAL;
+    if(!(pp1 = page_lookup(curenv->env_pgdir, va, 0)))
+        return -E_INVAL;
+    if(!(pp2 = page_lookup(env->env_pgdir, (void *)(USTACKTOP - PGSIZE), 0)))
+        return -E_INVAL;
+    memmove(page2kva(pp2), page2kva(pp1), PGSIZE);
+    env->env_tf = env->env_checkpoint;
+    return 0;
+}
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -375,8 +404,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_ipc_try_send(a1, a2, (void*)a3, a4);
         case SYS_ipc_recv:
             sys_ipc_recv((void*) a1);
+        case SYS_checkpoint: 
+            return sys_checkpoint(a1, (void*) a2);
+        case SYS_restart: 
+            return sys_restart(a1, (void*) a2);
         default:
             return -E_INVAL;
 	}
 }
-
