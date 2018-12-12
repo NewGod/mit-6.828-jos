@@ -76,6 +76,10 @@ KERN_BINFILES +=	user/idle \
 			user/pingpong \
 			user/pingpongs \
 			user/primes
+
+# Binary files for Lab 4 Challenge 
+KERN_BINFILES +=	user/replay 
+
 # Binary files for LAB5
 KERN_BINFILES +=	user/faultio\
 	      		user/spawnfaultio\

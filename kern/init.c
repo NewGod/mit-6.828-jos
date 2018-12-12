@@ -45,6 +45,7 @@ i386_init(void)
 	// Your code here:
 
 	// Starting non-boot CPUs
+    lock_kernel();
 	boot_aps();
 
 	// Start fs.
@@ -115,9 +116,8 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
-
-	// Remove this after you finish Exercise 6
-	for (;;);
+    lock_kernel();
+    sched_yield();
 }
 
 /*

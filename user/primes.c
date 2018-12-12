@@ -41,10 +41,13 @@ umain(int argc, char **argv)
 	int i, id;
 
 	// fork the first prime process in the chain
+    cprintf("Arrive\n");
 	if ((id = fork()) < 0)
 		panic("fork: %e", id);
+    cprintf("Arrive id:\n", id);
 	if (id == 0)
 		primeproc();
+    cprintf("Arrive id:\n", id);
 
 	// feed all the integers through
 	for (i = 2; ; i++)

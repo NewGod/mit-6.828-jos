@@ -17,7 +17,12 @@ enum {
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
+    SYS_checkpoint,
+    SYS_restart,
 	NSYSCALLS
 };
+#define MSR_IA32_SYSTEM_CS (0x174)
+#define MSR_IA32_SYSTEM_ESP (0x175)
+#define MSR_IA32_SYSTEM_EIP (0x176)
 
 #endif /* !JOS_INC_SYSCALL_H */
