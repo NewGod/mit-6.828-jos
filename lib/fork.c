@@ -63,7 +63,10 @@ duppage(envid_t envid, unsigned pn)
 
 	// LAB 4: Your code here.
     int perm = PGOFF(uvpt[pn]);
-    if (perm & (PTE_W|PTE_COW)) {
+    if (perm & PTE_SHARE) {
+        if ((r = sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn * PGSIZE), PTE_SYSCALL)) < 0) 
+            return r;
+    }else if (perm & (PTE_W|PTE_COW)) {
         if ((r = sys_page_map(0, (void*) (pn*PGSIZE), envid, (void*) (pn * PGSIZE), PTE_COW|PTE_U|PTE_P) < 0))
             return r;
         if ((r = sys_page_map(0, (void*) (pn*PGSIZE), 0, (void*) (pn * PGSIZE), PTE_COW|PTE_U|PTE_P) < 0))
