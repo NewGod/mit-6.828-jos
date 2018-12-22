@@ -48,14 +48,11 @@ bc_pgfault(struct UTrapframe *utf)
 	// the disk.
 	//
 	// LAB 5: you code here:
-    envid_t envid = thisenv->env_id;
     void *blkaddr = ROUNDDOWN(addr, PGSIZE);
-    if (sys_page_alloc(envid, blkaddr, PTE_SYSCALL) < 0) 
+    if (sys_page_alloc(0, blkaddr, PTE_SYSCALL) < 0) 
         panic("bg_pgfault: sys_page_alloc error"); 
     if (ide_read(blockno * BLKSECTS, blkaddr, BLKSECTS) < 0)
         panic("bg_pgfault: failed to read disk block\n"); 
-    if (sys_page_map(envid, blkaddr, envid, blkaddr, PTE_SYSCALL) < 0)
-        panic("bg_pgfault: sys_page_map error");
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
 	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
@@ -85,13 +82,12 @@ flush_block(void *addr)
 
 	// LAB 5: Your code here.
     void *blkaddr = ROUNDDOWN(addr, PGSIZE);
-    envid_t envid = thisenv->env_id; 
     if (!va_is_mapped(addr) || !va_is_dirty(addr)) { 
         return ;
     } 
     if (ide_write(blockno * BLKSECTS, blkaddr, BLKSECTS) < 0) 
         panic("flush_block: ide_write error");
-    if (sys_page_map(envid, blkaddr, envid, blkaddr, PTE_SYSCALL) < 0) 
+    if (sys_page_map(0, blkaddr, 0, blkaddr, PTE_SYSCALL) < 0) 
         panic("flush_block: sys_page_map error");
 }
 

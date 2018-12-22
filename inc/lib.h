@@ -20,6 +20,7 @@
 #include <inc/fs.h>
 #include <inc/fd.h>
 #include <inc/args.h>
+#include <inc/elf.h>
 
 #define USED(x)		(void)(x)
 
@@ -58,6 +59,7 @@ int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 int	sys_checkpoint(envid_t envid, void *va);
+int sys_exec(uintptr_t entry, uintptr_t init_esp, struct Proghdr *ph, unsigned int phnum);
 int	sys_restart(envid_t envid, void *va);
 
 // This must be inlined.  Exercise for reader: why?
@@ -105,6 +107,10 @@ int	pageref(void *addr);
 // spawn.c
 envid_t	spawn(const char *program, const char **argv);
 envid_t	spawnl(const char *program, const char *arg0, ...);
+
+// exec.c 
+int exec(const char *prog, const char **argv);
+int	execl(const char *program, const char *arg0, ...);
 
 // console.c
 void	cputchar(int c);

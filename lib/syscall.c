@@ -2,6 +2,7 @@
 
 #include <inc/syscall.h>
 #include <inc/lib.h>
+#include <inc/elf.h>
 
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -131,6 +132,10 @@ sys_ipc_recv(void *dstva)
 int 
 sys_checkpoint(envid_t envid, void* va) { 
     return syscall(SYS_checkpoint, 1, envid, (uint32_t)va, 0, 0, 0);
+}
+
+int sys_exec(uintptr_t entry, uintptr_t init_esp, struct Proghdr *ph, unsigned int  phnum){ 
+    return syscall(SYS_exec, 1, entry, init_esp, (uint32_t)ph, phnum, 0);
 }
 
 int 

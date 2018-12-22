@@ -4,6 +4,7 @@
 #include <inc/error.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/elf.h>
 
 #include <kern/env.h>
 #include <kern/pmap.h>
@@ -134,7 +135,7 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
     struct Env *e;
     int r;
     if ((r = envid2env(envid, &e, 1)) < 0) return r; 
-    tf->tf_eflags = FL_IF;
+    tf->tf_eflags |= FL_IF;
     tf->tf_eflags &= ~FL_IOPL_MASK;
     tf->tf_cs = GD_UT | 3;
     e->env_tf = *tf;
@@ -387,6 +388,53 @@ sys_restart(envid_t envid, void *va){
     env->env_tf = env->env_checkpoint;
     return 0;
 }
+static int 
+sys_exec(uintptr_t entry, uintptr_t init_esp, struct Proghdr *ph, unsigned int phnum) { 
+    if (curenv == NULL) panic("sys_exec error: call by kernel");
+
+    memset(&curenv->env_tf, 0, sizeof(curenv->env_tf));
+    curenv->env_tf.tf_eflags = FL_IF | FL_IOPL_MASK; 
+    curenv->env_tf.tf_ds = GD_UD | 3;
+    curenv->env_tf.tf_es = GD_UD | 3;
+    curenv->env_tf.tf_ss = GD_UD | 3;
+    curenv->env_tf.tf_esp = init_esp;
+    curenv->env_tf.tf_cs = GD_UT | 3;
+    curenv->env_tf.tf_eip = entry;
+    curenv->env_pgfault_upcall = 0;
+    curenv->env_ipc_recving = 0; 
+
+    //Lab 3 challenge
+    memset(&curenv->env_checkpoint, 0, sizeof(curenv->env_checkpoint));
+    	// Set up program segments as defined in ELF header.
+    void *uexect = (void*) UEXECTEMP;
+    int i;
+    struct PageInfo* pp; 
+    for (i = 0; i < phnum; i++, ph++) {
+        if (ph->p_type != ELF_PROG_LOAD) 
+            continue;
+        int perm = PTE_P|PTE_U;
+        if (ph->p_flags & ELF_PROG_FLAG_WRITE)
+            perm |= PTE_W;
+        void* segbound = uexect + ROUNDUP(PGOFF(ph->p_va) + ph->p_memsz, PGSIZE);
+        uintptr_t va = ROUNDDOWN(ph->p_va, PGSIZE);
+        for (; uexect < segbound; uexect += PGSIZE, va += PGSIZE) {
+            pp = page_lookup(curenv->env_pgdir, uexect, NULL);
+            if (pp == NULL) 
+                panic("exec error: page not found");
+            if (page_insert(curenv->env_pgdir, pp, (void*)va, perm) < 0) 
+                panic("exec error: %e", -E_NO_MEM);
+            page_remove(curenv->env_pgdir, uexect);
+        }
+    }
+    pp = page_lookup(curenv->env_pgdir, UTEMP, NULL); 
+    if (pp == NULL) 
+        panic("exec error: page not found");
+    if (page_insert(curenv->env_pgdir, pp, (void*) USTACKTOP - PGSIZE, PTE_P|PTE_W|PTE_U) < 0) 
+        panic("exec error: %e", -E_NO_MEM);
+    page_remove(curenv->env_pgdir, UTEMP);
+    env_run(curenv);
+    return 0;
+}
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -430,6 +478,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_restart(a1, (void*) a2);
         case SYS_env_set_trapframe: 
             return sys_env_set_trapframe(a1, (void*) a2);
+        case SYS_exec:
+            return sys_exec(a1, a2, (struct Proghdr*)a3, a4);
         default:
             return -E_INVAL;
 	}
